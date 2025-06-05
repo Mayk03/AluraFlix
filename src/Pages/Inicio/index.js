@@ -36,23 +36,82 @@ function Inicio() {
     setSelectedVideo(null);
   };
 
-  const handleSave = (updatedVideo) => {
-    // Aquí se manejaría la lógica de guardado si fuera necesario
-    handleModalClose();
+  const handleSave = async (updatedVideo) => {
+    try {
+      const response = await fetch(
+        `https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos/${updatedVideo.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedVideo),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Error al guardar el video.");
+      }
+
+      const data = await response.json();
+
+      // Actualizamos la lista local
+      setVideos((prevVideos) =>
+        prevVideos.map((video) => (video.id === data.id ? data : video))
+      );
+
+      setError(null);
+      handleModalClose();
+    } catch (error) {
+      setError(error.message);
+    }
   };
 
-  // Obtener los videos de la API
+  const handleDelete = async (id) => {
+    const videoToDelete = videos.find((video) => video.id === id);
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que quieres borrar este video: ${videoToDelete?.titulo}?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(
+        `https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Error al borrar el video.");
+      }
+
+      // Eliminarlo del estado local
+      setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
+    } catch (error) {
+      setError("No se pudo eliminar el video.");
+    }
+  };  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          "https://678dc6e4a64c82aeb11de3bb.mockapi.io/Videos"
+          "https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos"
         );
         if (!response.ok) {
           throw new Error("Error al obtener los datos de la API");
         }
         const data = await response.json();
-        setVideos(data); // Guardamos los videos
+        setVideos(data);
+
+        // 👇 Aquí se imprime la lista de videos disponibles
+        console.log("Videos disponibles:");
+        data.forEach((video) =>
+          console.log(`ID: ${video.id}, Título: ${video.titulo}`)
+        );
+
+        setError(null);
       } catch (error) {
         setError("Error al obtener los videos.");
       } finally {
@@ -61,23 +120,20 @@ function Inicio() {
     };
 
     fetchData();
-  }, []);
+  }, []);  
 
   if (loading) {
     return <LoadingMessage>Cargando contenido...</LoadingMessage>;
   }
 
-  if (error) {
-    return <ErrorMessage>{error}</ErrorMessage>;
-  }
-
   return (
     <div>
       <Banner />
+      {error && <ErrorMessage>{error}</ErrorMessage>}
       <Categorias
         videos={videos}
         onEdit={handleEditClick}
-        onDelete={() => {}}
+        onDelete={handleDelete}
       />
       {isModalOpen && (
         <Modal

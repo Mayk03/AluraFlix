@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useParams, useNavigate } from "react-router-dom";
 
+// Estilos con styled-components
 const PageContainer = styled.div`
   background-color: #1a1a1a;
   color: #fff;
@@ -105,32 +106,40 @@ const ErrorMessage = styled.div`
   border-radius: 5px;
 `;
 
+// Función para extraer el ID de cualquier formato de URL de YouTube
+const extractYouTubeId = (url) => {
+  const regex =
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^\s&]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : url;
+};
+
 function AgregarVideos() {
   const { videoId } = useParams();
   const navigate = useNavigate();
-  const [title, setTitle] = useState("");
+
+  const [titulo, setTitulo] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(""); // Estado para la categoría seleccionada
+  const [descripcion, setDescripcion] = useState("");
+  const [categoria, setCategoria] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [video, setVideo] = useState(null);
 
-  const categories = ["Tecnología", "Educación", "Entretenimiento"]; // Las categorías predefinidas
+  const categories = ["Frontend", "Backend", "Innovación y Gestión"];
 
+  // Cargar datos si estamos editando un video
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const response = await fetch(
-          "https://678dc6e4a64c82aeb11de3bb.mockapi.io/Videos"
+          "https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos"
         );
         const data = await response.json();
 
         if (videoId) {
-          const foundVideo = data.find(
-            (video) => video.id === parseInt(videoId)
-          );
+          const foundVideo = data.find((v) => v.id === videoId);
           setVideo(foundVideo || null);
         }
       } catch (error) {
@@ -143,55 +152,56 @@ function AgregarVideos() {
     fetchData();
   }, [videoId]);
 
+  // Rellenar campos si se está editando
   useEffect(() => {
     if (video) {
-      setTitle(video.title);
-      setVideoUrl(video.videoUrl);
-      setDescription(video.description || "");
-      setCategory(video.category || ""); // Si ya existe un video, pre-llenar la categoría
+      setTitulo(video.titulo || "");
+      setVideoUrl(video.videoUrl || "");
+      setDescripcion(video.descripcion || "");
+      setCategoria(video.categoria || "");
     }
   }, [video]);
 
+  // Limpiar el formulario
   const handleClear = () => {
-    setTitle("");
+    setTitulo("");
     setVideoUrl("");
-    setDescription("");
-    setCategory(""); // Limpiar la categoría
+    setDescripcion("");
+    setCategoria("");
   };
 
+  // Guardar (crear o actualizar) el video
   const handleSave = async (e) => {
     e.preventDefault();
-    if (title && videoUrl && category) {
-      const videoIdForSave = videoId || Date.now();
-      const videoKey = videoUrl.split("v=")[1]; // Obtener la parte del ID de la URL
-      const imageUrl = `https://img.youtube.com/${videoKey}/hqdefault.jpg`; // Crear la URL de la imagen
 
-      const updatedVideo = {
-        id: videoIdForSave,
-        title,
-        videoUrl: videoKey, // Solo guardar el ID del video
-        description,
-        category,
-        imageUrl, // URL de la imagen
+    if (titulo && videoUrl && categoria) {
+      // Extrae el ID correctamente desde cualquier formato de URL
+      const videoKey = extractYouTubeId(videoUrl);
+      const imageUrl = `https://img.youtube.com/vi/${videoKey}/hqdefault.jpg`;
+
+      const nuevoVideo = {
+        titulo,
+        imageUrl,
+        videoUrl: videoKey,
+        descripcion,
+        categoria,
       };
 
       try {
         const response = await fetch(
-          `https://678dc6e4a64c82aeb11de3bb.mockapi.io/Videos/${
-            videoIdForSave || ""
+          `https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos/${
+            videoId || ""
           }`,
           {
             method: videoId ? "PUT" : "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(updatedVideo),
+            body: JSON.stringify(nuevoVideo),
           }
         );
 
-        if (!response.ok) {
-          throw new Error("Error al guardar el video");
-        }
+        if (!response.ok) throw new Error("Error al guardar el video");
 
         navigate("/");
       } catch (error) {
@@ -202,24 +212,20 @@ function AgregarVideos() {
     }
   };
 
-  if (loading) {
-    return <LoadingMessage>Cargando...</LoadingMessage>;
-  }
-
-  if (error) {
-    return <ErrorMessage>{error}</ErrorMessage>;
-  }
+  // Mostrar cargando o error si aplica
+  if (loading) return <LoadingMessage>Cargando...</LoadingMessage>;
+  if (error) return <ErrorMessage>{error}</ErrorMessage>;
 
   return (
     <PageContainer>
       <MainTitle>{videoId ? "Editar Video" : "Nuevo Video"}</MainTitle>
       <Form onSubmit={handleSave}>
         <FormGroup>
-          <Label htmlFor='title'>Título</Label>
+          <Label htmlFor='titulo'>Título</Label>
           <Input
-            id='title'
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            id='titulo'
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
             placeholder='Título del video'
           />
         </FormGroup>
@@ -233,11 +239,11 @@ function AgregarVideos() {
           />
         </FormGroup>
         <FormGroup>
-          <Label htmlFor='category'>Categoría</Label>
+          <Label htmlFor='categoria'>Categoría</Label>
           <Select
-            id='category'
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            id='categoria'
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
           >
             <option value=''>Selecciona una categoría</option>
             {categories.map((cat, index) => (
@@ -251,11 +257,11 @@ function AgregarVideos() {
           </Select>
         </FormGroup>
         <FormGroup>
-          <Label htmlFor='description'>Descripción</Label>
+          <Label htmlFor='descripcion'>Descripción</Label>
           <Input
-            id='description'
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            id='descripcion'
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
             placeholder='Descripción (opcional)'
           />
         </FormGroup>

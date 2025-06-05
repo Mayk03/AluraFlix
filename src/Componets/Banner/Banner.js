@@ -84,12 +84,12 @@ const Banner = ({ category = "Innovación y Gestión" }) => {
     const fetchCategoryData = async () => {
       try {
         const response = await fetch(
-          "https://678dc6e4a64c82aeb11de3bb.mockapi.io/Videos"
+          "https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos"
         );
         if (!response.ok) throw new Error("Error al conectar con la API");
         const data = await response.json();
 
-        // Filtrar videos por categoría
+        // Filtrar por categoría
         const videosByCategory = data.filter(
           (video) => video.categoria === category
         );
@@ -98,7 +98,12 @@ const Banner = ({ category = "Innovación y Gestión" }) => {
           throw new Error("No se encontraron videos para esta categoría.");
         }
 
-        setVideoData(videosByCategory[0]); // Seleccionar el primer video de la categoría
+        // Elegir un video al azar
+        const randomIndex = Math.floor(Math.random() * videosByCategory.length);
+        const randomVideo = videosByCategory[randomIndex];
+
+        // Guardar en el estado
+        setVideoData(randomVideo);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -107,7 +112,7 @@ const Banner = ({ category = "Innovación y Gestión" }) => {
     };
 
     fetchCategoryData();
-  }, [category]);
+  }, [category]);  
 
   if (loading) return <LoadingMessage>Cargando...</LoadingMessage>;
   if (error) return <LoadingMessage>{error}</LoadingMessage>;
@@ -124,8 +129,8 @@ const Banner = ({ category = "Innovación y Gestión" }) => {
       </MessageContainer>
       {videoData && (
         <FeaturedVideoCard>
-          <VideoDescription>Video destacado de la semana.</VideoDescription>
-          <Link to={`/player/${videoData.videoUrl}`}>
+          <VideoDescription>Video destacado.</VideoDescription>
+          <Link to={`/player/${videoData.id}`}>
             <VideoFrame
               src={videoData.imageUrl}
               alt={`Miniatura del video: ${videoData.titulo}`}

@@ -106,7 +106,7 @@ const Player = () => {
       try {
         setLoading(true);
         const response = await fetch(
-          "https://678dc6e4a64c82aeb11de3bb.mockapi.io/Videos"
+          "https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos"
         );
         const data = await response.json();
 
@@ -152,7 +152,7 @@ const Player = () => {
         </IframeContainer>
         <DescriptionContainer>
           <VideoTitle>{video.titulo}</VideoTitle>
-          <p>{video.description}</p>
+          <p>{video.descripcion}</p>
         </DescriptionContainer>
       </VideoItem>
     </PlayerContainer>

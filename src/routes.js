@@ -7,6 +7,7 @@ import Player from "./Pages/Player/Player";
 import Favoritos from "Pages/Favoritos/Favoritos";
 import Error404 from "Pages/Error404";
 import AgregarVideos from "./Pages/AgregarVideos/AgregarVideos";
+import Login from "./Pages/Login/Login";
 
 const AppRouters = () => {
   return (
@@ -29,6 +30,10 @@ const AppRouters = () => {
           <Route
             path='/favoritos'
             element={<Favoritos />}
+          />
+          <Route
+            path='/login'
+            element={<Login />}
           />
           <Route
             path='*'

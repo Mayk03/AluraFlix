@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { FiEdit2 } from "react-icons/fi";
 import { RiDeleteBin3Line } from "react-icons/ri";
-import { FaHeart } from "react-icons/fa";
-import { FaRegHeart } from "react-icons/fa";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useFavorites } from "../../Contexts/Favoritos/FavoritosContext";
+import { Link } from "react-router-dom";
 
 const CategorySection = styled.section`
   margin: 30px 0;
@@ -31,20 +31,19 @@ const VideoList = styled.div`
   gap: 15px;
 `;
 
+// Tarjeta como contenedor relativo
 const VideoCard = styled.div`
-  width: calc(33.33% - 10px);
-  height: 260px;
-  background-color: transparent;
-  background-image: url(${(props) => props.imageUrl || ""});
-  background-size: cover;
-  background-position: center;
+  width: calc(33% - 10px);
+  height: 230px;
   border-radius: 10px;
-  box-shadow: inset 0 4px 10px
-    ${(props) => props.categoryColor || "transparent"};
+  border: none;
+  box-shadow: 0 0 8px 2px ${(props) => props.categoryColor || "transparent"},
+    inset 0 4px 10px ${(props) => props.categoryColor || "transparent"};
   transition: transform 0.3s ease;
-  cursor: pointer;
+  cursor: default;
   position: relative;
-  margin-bottom:20px; /* Esto es importante para que el ButtonGroup se posicione relativo a la tarjeta */
+  margin-bottom: 20px;
+  overflow: hidden;
 
   &:hover {
     transform: translateY(-10px);
@@ -59,14 +58,31 @@ const VideoCard = styled.div`
   }
 `;
 
+// Link que cubre toda la tarjeta, con background image
+const VideoLink = styled(Link)`
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url(${(props) => props.imageUrl || ""});
+  background-size: cover;
+  background-position: center;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  position: relative; /* Para los botones en overlay */
+  z-index: 0;
+`;
+
+// Contenedor absoluto para los botones en el fondo negro al pie
 const ButtonGroup = styled.div`
   display: flex;
-  background-color: #000000;
+  background-color: rgba(0, 0, 0, 0.8);
   justify-content: space-evenly;
-  border-radius: 0px 0px 10px 10px;
+  border-radius: 0 0 10px 10px;
   position: absolute;
   bottom: 0;
   width: 100%;
+  z-index: 10;
 `;
 
 const Button = styled.button`
@@ -85,6 +101,7 @@ const Button = styled.button`
   }
 `;
 
+// Botón favorito con color rojo si es favorito
 const FavoriteButton = styled(Button)`
   color: ${(props) => (props.isFavorite ? "red" : "#ffffff")};
   transition: color 0.3s ease;
@@ -97,19 +114,25 @@ const Categorias = ({ videos, onEdit, onDelete }) => {
     "Innovación y Gestión": [],
   });
 
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites();
+
   const categoryColors = {
     Frontend: "#18dcff",
     Backend: "#00C86F",
     "Innovación y Gestión": "#FFBA05",
   };
 
-  const [favorites, setFavorites] = useState({});
+  const toggleFavorite = (video, categoryTitle) => {
+    isFavorite(video.id)
+      ? removeFavorite(video.id)
+      : addFavorite(video, categoryTitle);
+  };
 
-  const toggleFavorite = (videoId) => {
-    setFavorites((prevFavorites) => ({
-      ...prevFavorites,
-      [videoId]: !prevFavorites[videoId],
-    }));
+  // Evitar que clicks en botones propaguen el evento y disparen el Link
+  const handleButtonClick = (e, action) => {
+    e.preventDefault();
+    e.stopPropagation();
+    action();
   };
 
   useEffect(() => {
@@ -137,22 +160,40 @@ const Categorias = ({ videos, onEdit, onDelete }) => {
                   <VideoCard
                     key={video.id}
                     categoryColor={categoryColors[category]}
-                    imageUrl={video.imageUrl}
                   >
+                    {/* Link cubre toda la tarjeta y muestra la imagen */}
+                    <VideoLink
+                      to={`/player/${video.id}`}
+                      imageUrl={video.imageUrl}
+                    />
+                    {/* Botones con z-index para estar encima y evitar propagación */}
                     <ButtonGroup>
-                      <Button onClick={() => onEdit(video)}>
-                        <FiEdit2 />
-                        Editar
+                      <Button
+                        onClick={(e) =>
+                          handleButtonClick(e, () => onEdit(video))
+                        }
+                        title='Editar video'
+                      >
+                        <FiEdit2 /> Editar
                       </Button>
                       <FavoriteButton
-                        isFavorite={favorites[video.id]}
-                        onClick={() => toggleFavorite(video.id)}
+                        isFavorite={isFavorite(video.id)}
+                        onClick={(e) =>
+                          handleButtonClick(e, () =>
+                            toggleFavorite(video, category)
+                          )
+                        }
+                        title='Favorito'
                       >
-                        {favorites[video.id] ? <FaHeart /> : <FaRegHeart />}
+                        {isFavorite(video.id) ? <FaHeart /> : <FaRegHeart />}
                       </FavoriteButton>
-                      <Button onClick={() => onDelete(video.id)}>
-                        <RiDeleteBin3Line />
-                        Borrar
+                      <Button
+                        onClick={(e) =>
+                          handleButtonClick(e, () => onDelete(video.id))
+                        }
+                        title='Borrar video'
+                      >
+                        <RiDeleteBin3Line /> Borrar
                       </Button>
                     </ButtonGroup>
                   </VideoCard>

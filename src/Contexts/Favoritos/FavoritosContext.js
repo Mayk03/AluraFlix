@@ -27,6 +27,15 @@ export function FavoritosProvider({ children }) {
     return favorites.some((video) => video.id === videoId);
   }
 
+  // Función para actualizar un video en favoritos
+  function updateFavorite(updatedVideo) {
+    setFavorites((prevFavorites) =>
+      prevFavorites.map((video) =>
+        video.id === updatedVideo.id ? { ...video, ...updatedVideo } : video
+      )
+    );
+  }
+
   return (
     <FavoritesContext.Provider
       value={{
@@ -34,6 +43,7 @@ export function FavoritosProvider({ children }) {
         addFavorite,
         removeFavorite,
         isFavorite,
+        updateFavorite, // <-- Aquí la agrego al contexto
       }}
     >
       {children}

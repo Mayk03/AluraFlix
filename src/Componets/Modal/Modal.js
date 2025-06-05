@@ -11,6 +11,7 @@ const ModalBackground = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 9999;
 `;
 
 const ModalContent = styled.div`
@@ -119,58 +120,94 @@ const Button = styled.button`
   }
 `;
 
-const Modal = ({ video, onClose }) => {
-  const [editedVideo, setEditedVideo] = useState(video);
+const Modal = ({ video, onClose, onSave }) => {
+  const [editedVideo, setEditedVideo] = useState(null);
   const [categorias, setCategorias] = useState([]);
   const [error, setError] = useState(null);
 
+  // Cargar categorías únicas
   useEffect(() => {
-    // Cargar los videos (categorías) al montar el componente
     const fetchCategorias = async () => {
       try {
-        const response = await fetch(
-          "https://678dc6e4a64c82aeb11de3bb.mockapi.io/Videos"
+        const res = await fetch(
+          "https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos"
         );
-        const data = await response.json();
-        setCategorias(data || []); // Se asigna los datos de los videos (categorías)
-      } catch (error) {
-        setError("Error al cargar los videos.");
+        const data = await res.json();
+        const categoriasUnicas = [...new Set(data.map((v) => v.categoria))];
+        setCategorias(categoriasUnicas);
+      } catch (err) {
+        console.error("Error al cargar las categorías:", err);
+        setError("Error al cargar las categorías.");
       }
     };
 
     fetchCategorias();
-    setEditedVideo(video);
+  }, []);
+
+  // Cargar video al abrir modal
+  useEffect(() => {
+    if (video) {
+      setEditedVideo({ ...video });
+    }
   }, [video]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditedVideo({ ...editedVideo, [name]: value });
+    setEditedVideo((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSave = async () => {
-    setError(null);
+    if (!editedVideo) return;
+
+    const { titulo, imageUrl, videoUrl, descripcion, categoria, id } =
+      editedVideo;
+
+    if (
+      !id ||
+      !titulo ||
+      !imageUrl ||
+      !videoUrl ||
+      !descripcion ||
+      !categoria
+    ) {
+      alert("Por favor, completa todos los campos.");
+      return;
+    }
 
     try {
       const response = await fetch(
-        `https://678dc6e4a64c82aeb11de3bb.mockapi.io/Videos/${editedVideo.id}`,
+        `https://683a6a6543bb370a8672a3fe.mockapi.io/videos/Videos/${id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(editedVideo),
+          body: JSON.stringify({
+            titulo,
+            imageUrl,
+            videoUrl,
+            descripcion,
+            categoria,
+          }),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Error al guardar el video.");
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText}`);
       }
 
-      if (typeof onClose === "function") {
-        onClose();
-      }
-    } catch (error) {
-      setError("Error al guardar el video.");
+      const updatedVideo = await response.json();
+      onSave(updatedVideo);
+      onClose();
+    } catch (err) {
+      console.error("Error en guardado:", err);
+      alert(
+        "Hubo un error al guardar el video. Revisa la consola para más detalles."
+      );
     }
   };
 
@@ -180,59 +217,65 @@ const Modal = ({ video, onClose }) => {
         <CloseButton onClick={onClose}>X</CloseButton>
         <h2>Editar Video</h2>
         {error && <p style={{ color: "red" }}>{error}</p>}
+
         <FormGroup>
           <Label>Título:</Label>
           <Input
             type='text'
-            name='title'
-            value={editedVideo.title}
+            name='titulo'
+            value={editedVideo?.titulo || ""}
             onChange={handleInputChange}
           />
         </FormGroup>
+
         <FormGroup>
           <Label>URL de la Imagen:</Label>
           <Input
             type='text'
-            name='thumbnailUrl'
-            value={editedVideo.thumbnailUrl}
+            name='imageUrl'
+            value={editedVideo?.imageUrl || ""}
             onChange={handleInputChange}
           />
         </FormGroup>
+
         <FormGroup>
           <Label>URL del Video:</Label>
           <Input
             type='text'
             name='videoUrl'
-            value={editedVideo.videoUrl}
+            value={editedVideo?.videoUrl || ""}
             onChange={handleInputChange}
           />
         </FormGroup>
+
         <FormGroup>
           <Label>Descripción:</Label>
           <Textarea
-            name='description'
-            value={editedVideo.description}
+            name='descripcion'
+            value={editedVideo?.descripcion || ""}
             onChange={handleInputChange}
           />
         </FormGroup>
+
         <FormGroup>
           <Label>Categoría:</Label>
           <Select
             name='categoria'
-            value={editedVideo.categoria}
+            value={editedVideo?.categoria || ""}
             onChange={handleInputChange}
           >
             <option value=''>Seleccionar Categoría</option>
-            {categorias.map((categoria) => (
+            {categorias.map((cat, idx) => (
               <option
-                key={categoria.title}
-                value={categoria.title}
+                key={idx}
+                value={cat}
               >
-                {categoria.title}
+                {cat}
               </option>
             ))}
           </Select>
         </FormGroup>
+
         <ButtonContainer>
           <Button
             color='#0f0'
@@ -251,5 +294,6 @@ const Modal = ({ video, onClose }) => {
     </ModalBackground>
   );
 };
+
 
 export default Modal;
